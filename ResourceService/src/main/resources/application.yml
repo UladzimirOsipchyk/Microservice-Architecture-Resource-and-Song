@@ -1,0 +1,32 @@
+server:
+  port: ${SERVER_PORT_RESOURCE:8080}
+
+spring:
+  application:
+    name: ResourceService
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL_RESOURCE:jdbc:postgresql://localhost:5432/resource_db}
+    driverClassName: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME_RESOURCE:org.postgresql.Driver}
+
+  jpa:
+    database-platform: ${SPRING_DATASOURCE_RESOURCE_DIALECT:org.hibernate.dialect.PostgreSQLDialect}
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO_RESOURCE:none}
+    show-sql: ${SPRING_JPA_SHOW_SQL_RESOURCE:true}
+
+  cloud:
+    openfeign:
+      client:
+        config:
+          song-service:
+            url: ${SPRING_CLOUD_OPENFEIGN_CLIENT_CONFIG_SONG_SERVICE_URL:http://song-app:8081/}
+
+
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${SERVICE_URL_DEFAULT_ZONE_DISCOVERY:http://localhost:8761/eureka/}
+  instance:
+    instance-id: ${SERVER_INSTANCE_ID_RESOURCE:resource-svc-instance}-${random.uuid}

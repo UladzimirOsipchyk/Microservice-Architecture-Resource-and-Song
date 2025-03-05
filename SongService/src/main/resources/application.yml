@@ -1,0 +1,27 @@
+server:
+  port: ${SERVER_PORT_SONG:8081}
+
+spring:
+  application:
+    name: SongService
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL_SONG:jdbc:postgresql://localhost:5432/song_db}
+    driverClassName: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME_SONG:org.postgresql.Driver}
+
+  jpa:
+    database-platform: ${SPRING_DATASOURCE_SONG_DIALECT:org.hibernate.dialect.PostgreSQLDialect}
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO_SONG:update}
+    show-sql: ${SPRING_JPA_SHOW_SQL_SONG:true}
+
+  jackson:
+    default-property-inclusion: ${SPRING_DEFAULT_JACKSON_PROPERTY_INCLUSION_SONG:non_null}
+
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${SERVICE_URL_DEFAULT_ZONE_DISCOVERY:http://localhost:8761/eureka/}
+  instance:
+    instance-id: ${SERVER_INSTANCE_ID_SONG:song-svc-instance}-${random.uuid}

@@ -1,0 +1,89 @@
+version: "3.8"
+services:
+  discovery-svc:
+    build:
+      context: ./DiscoveryService
+      dockerfile: Dockerfile
+
+    container_name: discovery-svc
+    environment:
+      - SERVER_PORT=${SERVER_PORT_DISCOVERY}
+      - SERVER_PORT_DISCOVERY=${SERVER_PORT_DISCOVERY}
+      - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
+      - REGISTER_WITH_EUREKA_DISCOVERY=${REGISTER_WITH_EUREKA_DISCOVERY}
+      - FETCH_REGISTRY_DISCOVERY=${FETCH_REGISTRY_DISCOVERY}
+
+    ports:
+      - ${SERVER_PORT_DISCOVERY}:${SERVER_PORT_DISCOVERY}
+
+
+  resource-db:
+    image: postgres:alpine
+    container_name: resource-svc-db
+    volumes:
+#      - была проблема с подключением к базе при старте контейнера, типа такой базы нету...при нулевом страте - все работало
+#      - resource-db-data:/var/lib/postgresql/data
+      - ./init-scripts/resource-db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=${SPRING_DATASOURCE_RESOURCE_DATABASE_NAME}
+      - POSTGRES_USER=${SPRING_DATASOURCE_USERNAME_RESOURCE}
+      - POSTGRES_HOST_AUTH_METHOD=${POSTGRES_HOST_AUTH_METHOD}
+
+  resource-svc:
+    build:
+      context: ./ResourceService
+      dockerfile: Dockerfile
+
+    environment:
+      - SERVER_PORT=${SERVER_PORT_RESOURCE}
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL_RESOURCE}
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME_RESOURCE}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD_RESOURCE}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=${SPRING_DATASOURCE_DRIVER_CLASS_NAME_RESOURCE}
+      - SPRING_DATASOURCE_RESOURCE_DIALECT=${SPRING_DATASOURCE_RESOURCE_DIALECT}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO_RESOURCE=${SPRING_JPA_HIBERNATE_DDL_AUTO_RESOURCE}
+      - SPRING_JPA_SHOW_SQL_RESOURCE=${SPRING_JPA_SHOW_SQL_RESOURCE}
+      - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
+    ports:
+      - ${SERVER_PORT_RESOURCE}:${SERVER_PORT_RESOURCE}
+
+  song-db:
+    image: postgres:alpine
+    container_name: song-svc-db
+    volumes:
+      - song-db-data:/var/lib/postgresql/data
+      - ./init-scripts/song-db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=${SPRING_DATASOURCE_SONG_DATABASE_NAME}
+
+  song-svc:
+    build:
+      context: ./SongService
+      dockerfile: Dockerfile
+
+    environment:
+      - SERVER_PORT=${SERVER_PORT_SONG}
+      - SPRING_DATASOURCE_URL_SONG=${SPRING_DATASOURCE_URL_SONG}
+      - SPRING_DATASOURCE_USERNAME_SONG=${SPRING_DATASOURCE_USERNAME_SONG}
+      - SPRING_DATASOURCE_PASSWORD_SONG=${SPRING_DATASOURCE_PASSWORD_SONG}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME_SONG=${SPRING_DATASOURCE_DRIVER_CLASS_NAME_SONG}
+      - SPRING_DATASOURCE_SONG_DIALECT=${SPRING_DATASOURCE_SONG_DIALECT}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO_SONG=${SPRING_JPA_HIBERNATE_DDL_AUTO_SONG}
+      - SPRING_JPA_SHOW_SQL_SONG=${SPRING_JPA_SHOW_SQL_SONG}
+      - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
+    ports:
+      - ${SERVER_PORT_SONG_SCALE}:${SERVER_PORT_SONG}
+
+    deploy:
+      replicas: 2
+
+
+
+volumes:
+  resource-db-data:
+  song-db-data:
+
