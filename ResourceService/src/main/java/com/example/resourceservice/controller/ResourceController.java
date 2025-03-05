@@ -37,7 +37,7 @@ public class ResourceController {
                                                     @RequestHeader("Content-Type") String contentType) throws Exception {
 
     Resource resource = resourceService.createResource(fileData, contentType);
-    return new ResponseEntity<>(new ResourceDTO(resource.getId()), HttpStatus.OK);
+    return new ResponseEntity<>(new ResourceDTO(resource.getId(), resource.getFileUrl()), HttpStatus.OK);
   }
 
   @DeleteMapping()

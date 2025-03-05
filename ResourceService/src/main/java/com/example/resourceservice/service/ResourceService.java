@@ -36,6 +36,9 @@ public class ResourceService {
   @Autowired
   private RestTemplate restTemplate;
 
+  @Autowired
+  private S3StorageService s3StorageService;
+
   public Resource getResourceById(Long id) {
     if (id == null || id <= 0) {
       throw new InvalidIdException(id == null ? "null" : id.toString());
@@ -60,24 +63,29 @@ public class ResourceService {
     Metadata metadata = metadataExtractorService.extractMetadata(fileData);
 
     System.out.println("Meta: " + metadata);
+    System.out.println("FileName: " + metadata.get("dc:title"));
+
+    String fileUrl = s3StorageService.uploadFile(metadata.get("dc:title"), fileData, contentType);
     Resource resource = new Resource();
-    resource.setFileData(fileData);
+    resource.setFileUrl(fileUrl);
+
+    System.out.println("UPLOADED FILE URL: " + fileUrl);
 
     Resource savedResource = resourceRepository.save(resource);
 
-    SongMetaDataDTO songMetaDataDTO = new SongMetaDataDTO(
-        savedResource.getId(),
-        metadata.get("dc:title"),
-        metadata.get("xmpDM:artist"),
-        metadata.get("xmpDM:album"),
-        formatDuration(metadata.get("xmpDM:duration")),
-        metadata.get("xmpDM:releaseDate")
-    );
-
-    loadBalancerClient.execute("SONGSERVICE", songService -> {
-      URI songUri = songService.getUri().resolve("/songs");
-      return restTemplate.postForEntity(songUri, songMetaDataDTO, SongMetaDataDTO.class);
-    });
+//    SongMetaDataDTO songMetaDataDTO = new SongMetaDataDTO(
+//        savedResource.getId(),
+//        metadata.get("dc:title"),
+//        metadata.get("xmpDM:artist"),
+//        metadata.get("xmpDM:album"),
+//        formatDuration(metadata.get("xmpDM:duration")),
+//        metadata.get("xmpDM:releaseDate")
+//    );
+//
+//    loadBalancerClient.execute("SONGSERVICE", songService -> {
+//      URI songUri = songService.getUri().resolve("/songs");
+//      return restTemplate.postForEntity(songUri, songMetaDataDTO, SongMetaDataDTO.class);
+//    });
 
     return savedResource;
   }

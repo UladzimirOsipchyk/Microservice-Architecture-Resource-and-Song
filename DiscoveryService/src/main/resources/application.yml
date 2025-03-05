@@ -12,3 +12,8 @@ eureka:
     fetch-registry: ${FETCH_REGISTRY_DISCOVERY:false}
     service-url:
       defaultZone: ${SERVICE_URL_DEFAULT_ZONE_DISCOVERY:http://localhost:8761/eureka}
+
+management:
+  metrics:
+    enable:
+      system: false

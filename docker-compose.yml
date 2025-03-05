@@ -12,6 +12,8 @@ services:
       - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
       - REGISTER_WITH_EUREKA_DISCOVERY=${REGISTER_WITH_EUREKA_DISCOVERY}
       - FETCH_REGISTRY_DISCOVERY=${FETCH_REGISTRY_DISCOVERY}
+      - JAVA_TOOL_OPTIONS=--add-opens=java.base/jdk.internal.platform=ALL-UNNAMED
+      - JAVA_TOOL_OPTIONS="-XX:-UseContainerSupport"
 
     ports:
       - ${SERVER_PORT_DISCOVERY}:${SERVER_PORT_DISCOVERY}
@@ -82,8 +84,24 @@ services:
       replicas: 2
 
 
+  minio:
+    image: minio/minio
+    ports:
+      - ${MINIO_SERVER_PORT}:${MINIO_SERVER_PORT}
+#      bucket-name: ${MINIO_SERVER_BUCKET_NAME:local-songs}
+#      endpoint: ${MINIO_SERVER_HOST:http://localhost:9000}
+#      access-key: ${MINIO_SERVER_ACCESS_KEY:minioadmin}
+#      secret-key: ${MINIO_SERVER_SECRET_KEY:minioadmin}
+
+    environment:
+      MINIO_ROOT_USER: ${MINIO_SERVER_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SERVER_SECRET_KEY}
+    command: server /data --console-address ":9090"
+    volumes:
+      - minio_data:/data
 
 volumes:
   resource-db-data:
   song-db-data:
+  minio_data:
 
