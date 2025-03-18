@@ -1,18 +1,18 @@
-package com.example.resourceservice.service;
+package com.example.resourceprocessor.service;
 
-import org.apache.tika.parser.mp3.Mp3Parser;
-import org.springframework.stereotype.Service;
+
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.ParseContext;
+import org.apache.tika.parser.mp3.Mp3Parser;
 import org.apache.tika.sax.BodyContentHandler;
+import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
+import java.io.FileInputStream;
 
 @Service
 public class MetadataExtractorService {
-  public Metadata extractMetadata(byte[] fileData) throws Exception {
-    InputStream inputStream = new ByteArrayInputStream(fileData);
+  public Metadata extractMetadata(String fileName) throws Exception {
+    FileInputStream inputStream = new FileInputStream(fileName);
     Mp3Parser parser = new Mp3Parser();
     BodyContentHandler handler = new BodyContentHandler();
     Metadata metadata = new Metadata();
