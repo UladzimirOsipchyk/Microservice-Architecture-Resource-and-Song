@@ -11,8 +11,12 @@ public class Resource {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
-  private String fileUrl;
+  private String fileName;
 
   @Lob
-  private byte[] fileData;
+  @Column(columnDefinition = "TEXT")
+  private String fileUrl;
+
+//  @Lob
+//  private byte[] fileData;
 }

@@ -1,6 +1,7 @@
 
 CREATE TABLE resources (
     id SERIAL PRIMARY KEY,
-    file_url VARCHAR(255) NOT NULL,
-    data BYTEA NOT NULL
+    fileName VARCHAR(50),
+    file_url TEXT
+--     data BYTEA NOT NULL
 );

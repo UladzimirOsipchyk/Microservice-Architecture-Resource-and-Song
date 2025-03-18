@@ -24,7 +24,7 @@ services:
     container_name: resource-svc-db
     volumes:
 #      - была проблема с подключением к базе при старте контейнера, типа такой базы нету...при нулевом страте - все работало
-#      - resource-db-data:/var/lib/postgresql/data
+      - resource-db-data:/var/lib/postgresql/data
       - ./init-scripts/resource-db/init.sql:/docker-entrypoint-initdb.d/init.sql
     env_file:
       - .env
@@ -84,14 +84,22 @@ services:
       replicas: 2
 
 
-  minio:
+  resource-processor-svc:
+    build:
+      context: ./ResourceProcessor
+      dockerfile: Dockerfile
+
+    environment:
+      - SERVER_PORT=${SERVER_PORT_RESOURCE_PROCESSOR}
+#      - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
+    ports:
+      - ${SERVER_PORT_RESOURCE_PROCESSOR}:${SERVER_PORT_RESOURCE_PROCESSOR}
+
+
+  minio-storage:
     image: minio/minio
     ports:
       - ${MINIO_SERVER_PORT}:${MINIO_SERVER_PORT}
-#      bucket-name: ${MINIO_SERVER_BUCKET_NAME:local-songs}
-#      endpoint: ${MINIO_SERVER_HOST:http://localhost:9000}
-#      access-key: ${MINIO_SERVER_ACCESS_KEY:minioadmin}
-#      secret-key: ${MINIO_SERVER_SECRET_KEY:minioadmin}
 
     environment:
       MINIO_ROOT_USER: ${MINIO_SERVER_ACCESS_KEY}
