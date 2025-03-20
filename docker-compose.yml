@@ -12,6 +12,8 @@ services:
       - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
       - REGISTER_WITH_EUREKA_DISCOVERY=${REGISTER_WITH_EUREKA_DISCOVERY}
       - FETCH_REGISTRY_DISCOVERY=${FETCH_REGISTRY_DISCOVERY}
+      - JAVA_TOOL_OPTIONS=--add-opens=java.base/jdk.internal.platform=ALL-UNNAMED
+      - JAVA_TOOL_OPTIONS="-XX:-UseContainerSupport"
 
     ports:
       - ${SERVER_PORT_DISCOVERY}:${SERVER_PORT_DISCOVERY}
@@ -22,7 +24,7 @@ services:
     container_name: resource-svc-db
     volumes:
 #      - была проблема с подключением к базе при старте контейнера, типа такой базы нету...при нулевом страте - все работало
-#      - resource-db-data:/var/lib/postgresql/data
+      - resource-db-data:/var/lib/postgresql/data
       - ./init-scripts/resource-db/init.sql:/docker-entrypoint-initdb.d/init.sql
     env_file:
       - .env
@@ -82,8 +84,42 @@ services:
       replicas: 2
 
 
+  resource-processor-svc:
+    build:
+      context: ./ResourceProcessor
+      dockerfile: Dockerfile
+
+    environment:
+      - SERVER_PORT=8181
+      - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
+    ports:
+      - ${SERVER_PORT_RESOURCE_PROCESSOR}:${SERVER_PORT_RESOURCE_PROCESSOR}
+
+
+  minio-storage:
+    image: minio/minio
+    ports:
+      - ${MINIO_SERVER_PORT}:${MINIO_SERVER_PORT}
+
+    environment:
+      MINIO_ROOT_USER: ${MINIO_SERVER_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SERVER_SECRET_KEY}
+    command: server /data --console-address ":9090"
+    volumes:
+      - minio_data:/data
+
+
+  rabbitmq:
+    image: rabbitmq:management
+    ports:
+      - ${RABBITMQ_PORT}:${RABBITMQ_PORT}
+      - ${RABBITMQ_PORT_HTTP}:${RABBITMQ_PORT_HTTP}
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
 
 volumes:
   resource-db-data:
   song-db-data:
+  minio_data:
 
