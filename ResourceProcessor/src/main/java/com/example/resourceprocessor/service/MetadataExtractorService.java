@@ -20,4 +20,12 @@ public class MetadataExtractorService {
     parser.parse(inputStream, handler, metadata, context);
     return metadata;
   }
+
+  public static String formatDuration(String seconds) {
+    double secondsInDouble = Double.parseDouble(seconds);
+    int totalSeconds = (int) Math.round(secondsInDouble);
+    int minutes = totalSeconds / 60;
+    int remainingSeconds = totalSeconds % 60;
+    return String.format("%02d:%02d", minutes, remainingSeconds);
+  }
 }

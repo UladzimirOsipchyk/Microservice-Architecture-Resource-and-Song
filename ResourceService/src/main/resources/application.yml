@@ -36,7 +36,12 @@ cloud:
   aws:
     s3:
       bucket-name: ${MINIO_SERVER_BUCKET_NAME:local-songs}
-      endpoint: ${MINIO_SERVER_HOST:http://minio-storage:9000}
-#      endpoint: ${MINIO_SERVER_HOST:http://localhost:9000}
+      endpoint: ${MINIO_SERVER_HOST:http://localhost:9000}
       access-key: ${MINIO_SERVER_ACCESS_KEY:minioadmin}
       secret-key: ${MINIO_SERVER_SECRET_KEY:minioadmin}
+
+rabbitmq:
+  resource-queue-name: ${RABBITMQ_RESOURCE_QUEUE_NAME:ResourceQueue}
+  host: ${RABBITMQ_HOST:localhost}
+  username: ${RABBITMQ_DEFAULT_USER:guest}
+  password: ${RABBITMQ_DEFAULT_PASS:guest}

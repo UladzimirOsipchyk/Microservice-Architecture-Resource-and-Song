@@ -90,8 +90,8 @@ services:
       dockerfile: Dockerfile
 
     environment:
-      - SERVER_PORT=${SERVER_PORT_RESOURCE_PROCESSOR}
-#      - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
+      - SERVER_PORT=8181
+      - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
     ports:
       - ${SERVER_PORT_RESOURCE_PROCESSOR}:${SERVER_PORT_RESOURCE_PROCESSOR}
 
@@ -107,6 +107,16 @@ services:
     command: server /data --console-address ":9090"
     volumes:
       - minio_data:/data
+
+
+  rabbitmq:
+    image: rabbitmq:management
+    ports:
+      - ${RABBITMQ_PORT}:${RABBITMQ_PORT}
+      - ${RABBITMQ_PORT_HTTP}:${RABBITMQ_PORT_HTTP}
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
 
 volumes:
   resource-db-data:

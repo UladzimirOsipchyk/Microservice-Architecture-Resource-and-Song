@@ -99,12 +99,8 @@ public class S3StorageService {
   @SneakyThrows
   @Transactional
   public void removeFiles(List<String> fileNamesList) {
-    System.out.println("remove files from minio...");
     List<DeleteObject> listToDelete = new LinkedList<>();
-
     fileNamesList.forEach(it -> listToDelete.add(new DeleteObject(it)));
-
-    System.out.println("Files to remove from Minio: " + listToDelete);
 
     RemoveObjectsArgs removeObjects = RemoveObjectsArgs.builder()
         .bucket(bucketName)
@@ -112,7 +108,6 @@ public class S3StorageService {
         .build();
 
     minioClient.removeObjects(removeObjects);
-    System.out.println("Files removed");
   }
 
   private void initBucketIfNotExists() throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {

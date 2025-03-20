@@ -2,9 +2,15 @@ package com.example.resourceprocessor.service;
 
 import io.minio.DownloadObjectArgs;
 import io.minio.MinioClient;
+import io.minio.errors.*;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.io.File;
+import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 
 @Service
 public class S3StorageService {
@@ -24,16 +30,13 @@ public class S3StorageService {
   }
 
   @SneakyThrows
-  public String downloadFile(String fileName) {
+  public void downloadFile(String fileName) {
     DownloadObjectArgs downloadObjectArgs = DownloadObjectArgs.builder()
         .bucket(bucketName)
         .object(fileName)
         .filename(fileName)
         .build();
 
-
     minioClient.downloadObject(downloadObjectArgs);
-
-    return downloadObjectArgs.filename();
   }
 }
