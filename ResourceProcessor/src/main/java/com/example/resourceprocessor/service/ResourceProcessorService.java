@@ -5,6 +5,9 @@ import lombok.SneakyThrows;
 import org.apache.tika.metadata.Metadata;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -30,6 +33,7 @@ public class ResourceProcessorService {
   @Autowired
   private RestTemplate restTemplate;
 
+  @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 2000), retryFor = Exception.class)
   public void executeMetaDataExtraction(Map<String, String> messageData) throws Exception {
     String fileName = messageData.get("key");
 
@@ -54,20 +58,21 @@ public class ResourceProcessorService {
     });
   }
 
+  @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 2000), retryFor = Exception.class)
   public void executeMedaDataDeletion(Map<String, String> messageData) throws Exception {
     String ids = messageData.get("id");
     List<Long> idsList = Arrays.stream(ids.replaceAll(" ", "").split(","))
         .map(Long::parseLong)
         .toList();
 
-//    URI songUri = new URI("http://localhost:8081/songs");
-//          String urlWithParams = UriComponentsBuilder.fromHttpUrl(songUri.toString())
-//          .queryParam("ids", String.join(",", idsList.stream()
-//              .map(String::valueOf)
-//              .toArray(String[]::new)))
-//          .toUriString();
+//    URI songUri = new URI("http://localhost:8081/songs");//
+//    String urlWithParams = UriComponentsBuilder.fromHttpUrl(songUri.toString())
+//        .queryParam("ids", String.join(",", idsList.stream()
+//        .map(String::valueOf)
+//        .toArray(String[]::new)))
+//        .toUriString();
 //
-//      restTemplate.delete(urlWithParams);
+//    restTemplate.delete(urlWithParams);
 
     loadBalancerClient.execute("SONGSERVICE", songService -> {
       URI songUri = songService.getUri().resolve("/songs");
@@ -100,5 +105,10 @@ public class ResourceProcessorService {
     }
 
     s3StorageService.downloadFile(downloadPath);
+  }
+
+  @Recover
+  public void recover(Exception e) {
+    System.err.println("Retries exhausted. Recovering with default");
   }
 }
