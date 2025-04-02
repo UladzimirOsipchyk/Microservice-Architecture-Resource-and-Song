@@ -5,6 +5,7 @@ import com.example.songservice.exception.exceptions.SongNotFoundException;
 import com.example.songservice.model.Song;
 import com.example.songservice.repository.SongRepository;
 import com.example.songservice.service.SongService;
+import com.example.songservice.utils.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -16,6 +17,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static com.example.songservice.utils.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -26,13 +28,6 @@ public class SongServiceTests {
 
   @InjectMocks
   private SongService songService = new SongService();
-
-  private final Long SONG_ID = 1L;
-  private final String SONG_NAME = "Bohemian Rhapsody";
-  private final String SONG_ARTIST = "Queen";
-  private final String SONG_ALBUM = "A Night at the Opera";
-  private final String SONG_LENGTH = "15:20";
-  private final String SONG_YEAR = "1975";
 
   @BeforeEach
   void setUp() {
@@ -69,7 +64,7 @@ public class SongServiceTests {
   @Test
   void testCreateSongSuccess() throws Exception {
     Song savedSong = prepareSongForTest();
-    SongRequestDTO songDTO = prepareSongDTOForTest();
+    SongRequestDTO songDTO = TestUtils.prepareSongDTOForTest();
 
     when(songRepository.save(any(Song.class))).thenReturn(savedSong);
 
@@ -86,7 +81,6 @@ public class SongServiceTests {
 
   @Test
   void testDeleteSongsSuccess() throws Exception {
-    // Given
     String idsCsv = "1,2";
 
     List<Long> idsList = Arrays.asList(1L, 2L);
@@ -94,10 +88,8 @@ public class SongServiceTests {
 
     when(songRepository.findAllByResourceIdIsIn(idsList)).thenReturn(songs);
 
-    // When
     List<Long> deletedIds = songService.deleteSongs(idsCsv);
 
-    // Then
     assertNotNull(deletedIds);
     assertEquals(2, deletedIds.size());
     assertTrue(deletedIds.contains(1L));
@@ -112,40 +104,5 @@ public class SongServiceTests {
     when(songRepository.findAllByResourceIdIsIn(idsList)).thenReturn(Collections.emptyList());
 
     assertNull(songService.deleteSongs(idsCsv));
-  }
-
-  private Song prepareSongForTest() {
-    Song song = new Song();
-    song.setId(SONG_ID);
-    song.setName(SONG_NAME);
-    song.setArtist(SONG_ARTIST);
-    song.setAlbum(SONG_ALBUM);
-    song.setLength(SONG_LENGTH);
-    song.setYear(SONG_YEAR);
-
-    song.setResourceId(SONG_ID);
-    return song;
-  }
-
-  private List<Song> prepareListOfSongs() {
-    Song songOne = prepareSongForTest();
-    Song songTwo = new Song();
-    songTwo.setId(2L);
-    songTwo.setName("Song2");
-    songTwo.setArtist("Artist2");
-    songTwo.setAlbum("Album2");
-
-    return List.of(songOne, songTwo);
-  }
-
-  private SongRequestDTO prepareSongDTOForTest() {
-    return new SongRequestDTO(
-        SONG_ID,
-        SONG_NAME,
-        SONG_ARTIST,
-        SONG_ALBUM,
-        SONG_LENGTH,
-        SONG_YEAR
-    );
   }
 }

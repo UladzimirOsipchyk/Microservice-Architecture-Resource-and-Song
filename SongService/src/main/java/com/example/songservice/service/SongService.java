@@ -56,7 +56,6 @@ public class SongService {
         .toList();
 
     List<Song> songs = songRepository.findAllByResourceIdIsIn(idsList);
-    System.out.println("Songs: " + songs);
     if (!songs.isEmpty()) {
       songRepository.deleteAll(songs);
       return idsList;
