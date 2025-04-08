@@ -1,4 +1,4 @@
-package com.example.songservice.unit_test.service;
+package com.example.songservice.unit.service;
 
 import com.example.songservice.dto.SongRequestDTO;
 import com.example.songservice.exception.exceptions.SongNotFoundException;

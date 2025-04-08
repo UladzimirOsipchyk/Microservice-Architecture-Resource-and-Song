@@ -1,4 +1,4 @@
-package com.example.songservice.contract_tests.controller;
+package com.example.songservice.contract.controller;
 
 
 import com.example.songservice.controller.SongController;

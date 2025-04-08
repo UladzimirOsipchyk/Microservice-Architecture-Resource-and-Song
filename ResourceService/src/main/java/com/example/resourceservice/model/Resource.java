@@ -16,7 +16,4 @@ public class Resource {
   @Lob
   @Column(columnDefinition = "TEXT")
   private String fileUrl;
-
-//  @Lob
-//  private byte[] fileData;
 }

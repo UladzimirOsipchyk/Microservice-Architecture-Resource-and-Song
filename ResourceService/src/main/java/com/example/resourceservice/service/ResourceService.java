@@ -16,6 +16,8 @@ import javax.transaction.Transactional;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 @Service
@@ -41,10 +43,12 @@ public class ResourceService {
     Optional<Resource> resource = resourceRepository.findById(id);
 
     if (resource.isPresent()) {
+      Path destination = Paths.get(resource.get().getFileName());
+      if (Files.exists(destination)) {
+        Files.delete(destination);
+      }
       File file = s3StorageService.downloadFile(resource.get().getFileName());
-      File tmpFile = File.createTempFile("song", "mp3", file);
-      file.delete();
-      return Files.readAllBytes(tmpFile.toPath());
+      return Files.readAllBytes(file.toPath());
     } else {
 
       throw new ResourceNotFoundException(String.valueOf(id));
@@ -53,7 +57,7 @@ public class ResourceService {
 
   @Transactional
   public Resource createResource(byte[] fileData, String contentType) throws Exception {
-    if (!contentType.equalsIgnoreCase("audio/mpeg")) {
+    if (!contentType.contains("audio/mpeg")) {
       throw new InvalidMp3Exception(contentType);
     }
 
