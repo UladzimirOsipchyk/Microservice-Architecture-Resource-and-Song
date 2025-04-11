@@ -12,17 +12,25 @@ services:
       - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
       - REGISTER_WITH_EUREKA_DISCOVERY=${REGISTER_WITH_EUREKA_DISCOVERY}
       - FETCH_REGISTRY_DISCOVERY=${FETCH_REGISTRY_DISCOVERY}
+      - JAVA_TOOL_OPTIONS=--add-opens=java.base/jdk.internal.platform=ALL-UNNAMED
+      - JAVA_TOOL_OPTIONS="-XX:-UseContainerSupport"
 
     ports:
       - ${SERVER_PORT_DISCOVERY}:${SERVER_PORT_DISCOVERY}
 
+
+    healthcheck:
+      test: "curl --fail --silent ${SERVICE_DISCOVERY_HEALTH_CHECK} | grep UP || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   resource-db:
     image: postgres:alpine
     container_name: resource-svc-db
     volumes:
 #      - была проблема с подключением к базе при старте контейнера, типа такой базы нету...при нулевом страте - все работало
-#      - resource-db-data:/var/lib/postgresql/data
+      - resource-db-data:/var/lib/postgresql/data
       - ./init-scripts/resource-db/init.sql:/docker-entrypoint-initdb.d/init.sql
     env_file:
       - .env
@@ -30,11 +38,26 @@ services:
       - POSTGRES_DB=${SPRING_DATASOURCE_RESOURCE_DATABASE_NAME}
       - POSTGRES_USER=${SPRING_DATASOURCE_USERNAME_RESOURCE}
       - POSTGRES_HOST_AUTH_METHOD=${POSTGRES_HOST_AUTH_METHOD}
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "user" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   resource-svc:
     build:
       context: ./ResourceService
       dockerfile: Dockerfile
+
+    depends_on:
+      discovery-svc:
+        condition: service_healthy
+      resource-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio-storage:
+        condition: service_healthy
 
     environment:
       - SERVER_PORT=${SERVER_PORT_RESOURCE}
@@ -59,11 +82,22 @@ services:
       - .env
     environment:
       - POSTGRES_DB=${SPRING_DATASOURCE_SONG_DATABASE_NAME}
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "user" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   song-svc:
     build:
       context: ./SongService
       dockerfile: Dockerfile
+
+    depends_on:
+      discovery-svc:
+        condition: service_healthy
+      song-db:
+        condition: service_healthy
 
     environment:
       - SERVER_PORT=${SERVER_PORT_SONG}
@@ -82,8 +116,61 @@ services:
       replicas: 2
 
 
+  resource-processor-svc:
+    build:
+      context: ./ResourceProcessor
+      dockerfile: Dockerfile
+
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      minio-storage:
+        condition: service_healthy
+
+    environment:
+      - SERVER_PORT=8181
+      - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
+      - SPRING_PROFILES_ACTIVE=docker
+    ports:
+      - ${SERVER_PORT_RESOURCE_PROCESSOR}:${SERVER_PORT_RESOURCE_PROCESSOR}
+
+
+  minio-storage:
+    image: minio/minio
+    ports:
+      - ${MINIO_SERVER_PORT}:${MINIO_SERVER_PORT}
+
+    environment:
+      MINIO_ROOT_USER: ${MINIO_SERVER_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SERVER_SECRET_KEY}
+      MINIO_HEALTH_CHECK_HOST: ${MINIO_HEALTH_CHECK_HOST}
+    command: server /data --console-address ":9090"
+    volumes:
+      - minio_data:/data
+
+    healthcheck:
+      test: "curl --fail --silent ${MINIO_HEALTH_CHECK_HOST} || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  rabbitmq:
+    image: rabbitmq:management
+    ports:
+      - ${RABBITMQ_PORT}:${RABBITMQ_PORT}
+      - ${RABBITMQ_PORT_HTTP}:${RABBITMQ_PORT_HTTP}
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   resource-db-data:
   song-db-data:
+  minio_data:
 
