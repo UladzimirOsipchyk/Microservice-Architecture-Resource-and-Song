@@ -110,18 +110,6 @@
           <baseClassForTests>com.example.songservice.contract.cdc.CdcBaseClass</baseClassForTests>
         </configuration>
       </plugin>
-<!--      <plugin>-->
-<!--        <groupId>org.springframework.cloud</groupId>-->
-<!--        <artifactId>spring-cloud-contract-maven-plugin</artifactId>-->
-<!--        <executions>-->
-<!--          <execution>-->
-<!--            <goals>-->
-<!--              <goal>convert</goal>-->
-<!--              <goal>generateTests</goal>-->
-<!--            </goals>-->
-<!--          </execution>-->
-<!--        </executions>-->
-<!--      </plugin>-->
     </plugins>
   </build>
 

@@ -5,6 +5,7 @@ import lombok.SneakyThrows;
 import org.apache.tika.metadata.Metadata;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
+import org.springframework.http.ResponseEntity;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
@@ -49,9 +50,6 @@ public class ResourceProcessorService {
         metadata.get("xmpDM:releaseDate")
     );
 
-//    URI songUri = new URI("http://localhost:8081/songs");
-//    restTemplate.postForEntity(songUri, songMetaDataDTO, SongMetaDataDTO.class);
-
     loadBalancerClient.execute("SONGSERVICE", songService -> {
       URI songUri = songService.getUri().resolve("/songs");
       return restTemplate.postForEntity(songUri, songMetaDataDTO, SongMetaDataDTO.class);
@@ -64,15 +62,6 @@ public class ResourceProcessorService {
     List<Long> idsList = Arrays.stream(ids.replaceAll(" ", "").split(","))
         .map(Long::parseLong)
         .toList();
-
-//    URI songUri = new URI("http://localhost:8081/songs");//
-//    String urlWithParams = UriComponentsBuilder.fromHttpUrl(songUri.toString())
-//        .queryParam("ids", String.join(",", idsList.stream()
-//        .map(String::valueOf)
-//        .toArray(String[]::new)))
-//        .toUriString();
-//
-//    restTemplate.delete(urlWithParams);
 
     loadBalancerClient.execute("SONGSERVICE", songService -> {
       URI songUri = songService.getUri().resolve("/songs");

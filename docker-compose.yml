@@ -1,5 +1,22 @@
 version: "3.8"
 services:
+  gateway-svc:
+    build:
+      context: ./GatewayService
+      dockerfile: Dockerfile
+
+    container_name: gateway-svc
+
+    environment:
+      - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
+
+    ports:
+      - ${SERVER_PORT_GATEWAY}:${SERVER_PORT_GATEWAY}
+
+    networks:
+      - default
+
+
   discovery-svc:
     build:
       context: ./DiscoveryService
@@ -24,6 +41,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+    networks:
+      - default
+
 
   resource-db:
     image: postgres:alpine
@@ -59,6 +80,10 @@ services:
       minio-storage:
         condition: service_healthy
 
+    networks:
+      - default
+
+
     environment:
       - SERVER_PORT=${SERVER_PORT_RESOURCE}
       - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL_RESOURCE}
@@ -69,6 +94,9 @@ services:
       - SPRING_JPA_HIBERNATE_DDL_AUTO_RESOURCE=${SPRING_JPA_HIBERNATE_DDL_AUTO_RESOURCE}
       - SPRING_JPA_SHOW_SQL_RESOURCE=${SPRING_JPA_SHOW_SQL_RESOURCE}
       - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - MINIO_SERVER_HOST=${MINIO_SERVER_HOST}
+      - MINIO_SERVER_BUCKET_NAME=${MINIO_SERVER_BUCKET_NAME}
     ports:
       - ${SERVER_PORT_RESOURCE}:${SERVER_PORT_RESOURCE}
 
@@ -112,8 +140,11 @@ services:
     ports:
       - ${SERVER_PORT_SONG_SCALE}:${SERVER_PORT_SONG}
 
-    deploy:
-      replicas: 2
+    networks:
+      - default
+
+#    deploy:
+#      replicas: 2
 
 
   resource-processor-svc:
@@ -130,9 +161,15 @@ services:
     environment:
       - SERVER_PORT=8181
       - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - MINIO_SERVER_HOST=${MINIO_SERVER_HOST}
       - SPRING_PROFILES_ACTIVE=docker
     ports:
       - ${SERVER_PORT_RESOURCE_PROCESSOR}:${SERVER_PORT_RESOURCE_PROCESSOR}
+
+    networks:
+      - default
+
 
 
   minio-storage:
@@ -154,6 +191,9 @@ services:
       timeout: 5s
       retries: 5
 
+    networks:
+      - default
+
 
   rabbitmq:
     image: rabbitmq:management
@@ -168,9 +208,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - default
+
 
 volumes:
   resource-db-data:
   song-db-data:
   minio_data:
+
+networks:
+  default:
+    driver: bridge
 
