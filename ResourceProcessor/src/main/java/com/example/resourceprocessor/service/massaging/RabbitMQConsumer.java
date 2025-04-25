@@ -1,5 +1,6 @@
-package com.example.resourceprocessor.service;
+package com.example.resourceprocessor.service.massaging;
 
+import com.example.resourceprocessor.service.ResourceProcessorService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 

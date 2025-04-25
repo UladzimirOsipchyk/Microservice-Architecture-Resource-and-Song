@@ -1,41 +1,28 @@
-package com.example.resourceservice.service;
+package com.example.resourceservice.service.storage;
 
+import com.example.resourceservice.dto.StorageDTO;
 import io.minio.*;
 import io.minio.errors.*;
 import io.minio.http.Method;
 import io.minio.messages.DeleteObject;
 import lombok.SneakyThrows;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.*;
 
 import javax.transaction.Transactional;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Service
 public class S3StorageService {
   private final MinioClient minioClient;
-
-  @Value("${cloud.aws.s3.bucket-name}")
-  private String bucketName;
 
   public S3StorageService(@Value("${cloud.aws.s3.endpoint}") String endpoint,
                           @Value("${cloud.aws.s3.access-key}") String accessKey,
@@ -48,12 +35,12 @@ public class S3StorageService {
   }
 
   @SneakyThrows
-  public String uploadFile(String fileName, byte[] fileData, String contentType) {
-    initBucketIfNotExists();
+  public String uploadFileToStorage(String fileName, byte[] fileData, String contentType, StorageDTO storage) {
+    initBucketIfNotExists(storage.getBucketName());
 
     InputStream inputStream = new ByteArrayInputStream(fileData);
     PutObjectArgs objectArgs = PutObjectArgs.builder()
-        .bucket(bucketName)
+        .bucket(storage.getBucketName())
         .object(fileName)
         .stream(inputStream, fileData.length, -1)
         .contentType(contentType)
@@ -64,7 +51,7 @@ public class S3StorageService {
     return minioClient.getPresignedObjectUrl(
         GetPresignedObjectUrlArgs.builder()
             .method(Method.GET)
-            .bucket(bucketName)
+            .bucket(storage.getBucketName())
             .object(fileName)
             .expiry(1, TimeUnit.DAYS)
             .build()
@@ -72,10 +59,10 @@ public class S3StorageService {
   }
 
   @SneakyThrows
-  public File downloadFile(String fileName) {
+  public File downloadFileFromStorage(String fileName, StorageDTO storage) {
 
     DownloadObjectArgs downloadObjectArgs = DownloadObjectArgs.builder()
-        .bucket(bucketName)
+        .bucket(storage.getBucketName())
         .object(fileName)
         .filename(fileName)
         .build();
@@ -86,10 +73,10 @@ public class S3StorageService {
   }
 
   @SneakyThrows
-  public void removeFile(String fileName) {
+  public void removeFile(String fileName, StorageDTO storage) {
 
     RemoveObjectArgs removeObjectArgs = RemoveObjectArgs.builder()
-        .bucket(bucketName)
+        .bucket(storage.getBucketName())
         .object(fileName)
         .build();
 
@@ -98,19 +85,39 @@ public class S3StorageService {
 
   @SneakyThrows
   @Transactional
-  public void removeFiles(List<String> fileNamesList) {
+  public void removeFiles(List<String> fileNamesList, StorageDTO storage) {
     List<DeleteObject> listToDelete = new LinkedList<>();
     fileNamesList.forEach(it -> listToDelete.add(new DeleteObject(it)));
 
     RemoveObjectsArgs removeObjects = RemoveObjectsArgs.builder()
-        .bucket(bucketName)
+        .bucket(storage.getBucketName())
         .objects(listToDelete)
         .build();
 
     minioClient.removeObjects(removeObjects);
   }
 
-  private void initBucketIfNotExists() throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
+  @SneakyThrows
+  @Transactional
+  public void copyFile(String fileName, StorageDTO storageFrom, StorageDTO storageTo) {
+    initBucketIfNotExists(storageTo.getBucketName());
+
+    minioClient.copyObject(
+        CopyObjectArgs.builder()
+            .bucket(storageTo.getBucketName())
+            .object(fileName)
+            .source(
+                CopySource.builder()
+                    .bucket(storageFrom.getBucketName())
+                    .object(fileName)
+                    .build()
+            )
+            .build()
+    );
+
+  }
+
+  private void initBucketIfNotExists(String bucketName) throws ServerException, InsufficientDataException, ErrorResponseException, IOException, NoSuchAlgorithmException, InvalidKeyException, InvalidResponseException, XmlParserException, InternalException {
     boolean isBucketExists = minioClient.bucketExists(
         BucketExistsArgs.builder().bucket(bucketName).build()
     );

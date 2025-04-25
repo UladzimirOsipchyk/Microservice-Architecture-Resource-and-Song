@@ -1,5 +1,5 @@
 server:
-  port: ${SERVER_PORT_GATEWAY:8085}
+  port: ${SERVER_PORT_GATEWAY:8080}
 
 spring:
   application:
@@ -22,6 +22,12 @@ spring:
           uri: lb://SONGSERVICE
           predicates:
             - Path=/songs/**
+
+        ## Storage Service
+        - id: storage_route
+          uri: lb://STORAGESERVICE
+          predicates:
+            - Path=/storages/**
 
 eureka:
   client:

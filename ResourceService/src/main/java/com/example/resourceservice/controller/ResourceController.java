@@ -2,8 +2,11 @@ package com.example.resourceservice.controller;
 
 import com.example.resourceservice.dto.DeletedResourceDTO;
 import com.example.resourceservice.dto.ResourceDTO;
+import com.example.resourceservice.dto.StorageDTO;
+import com.example.resourceservice.falback.FallbackHandler;
 import com.example.resourceservice.model.Resource;
-import com.example.resourceservice.service.ResourceService;
+import com.example.resourceservice.service.resource.ResourceService;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;

@@ -2,8 +2,8 @@ package com.example.resourceservice.component;
 
 import com.example.resourceservice.model.Resource;
 import com.example.resourceservice.repository.ResourceRepository;
-import com.example.resourceservice.service.MetadataExtractorService;
-import com.example.resourceservice.service.ResourceService;
+import com.example.resourceservice.service.metadata.MetadataExtractorService;
+import com.example.resourceservice.service.resource.ResourceService;
 import org.apache.tika.metadata.Metadata;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;

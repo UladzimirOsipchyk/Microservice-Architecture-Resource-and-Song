@@ -28,7 +28,7 @@ eureka:
 cloud:
   aws:
     s3:
-      bucket-name: ${MINIO_SERVER_BUCKET_NAME:local-songs}
+#      bucket-name: ${MINIO_SERVER_BUCKET_NAME:local-songs}
       endpoint: ${MINIO_SERVER_HOST:http://localhost:9000}
       access-key: ${MINIO_SERVER_ACCESS_KEY:minioadmin}
       secret-key: ${MINIO_SERVER_SECRET_KEY:minioadmin}

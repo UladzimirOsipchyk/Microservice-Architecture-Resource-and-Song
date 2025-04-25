@@ -5,7 +5,7 @@ import com.example.resourceservice.controller.ResourceController;
 import com.example.resourceservice.dto.DeletedResourceDTO;
 import com.example.resourceservice.dto.ResourceDTO;
 import com.example.resourceservice.model.Resource;
-import com.example.resourceservice.service.RabbitMQProducer;
+import com.example.resourceservice.service.messaging.RabbitMQProducer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

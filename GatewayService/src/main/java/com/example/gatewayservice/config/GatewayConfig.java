@@ -15,6 +15,8 @@ public class GatewayConfig {
             .uri("lb://RESOURCESERVICE"))
         .route(r -> r.path("/songs/**")
             .uri("lb://SONGSERVICE"))
+        .route(r -> r.path("/storages/**")
+                .uri("lb://STORAGESERVICE"))
         .build();
   }
 }

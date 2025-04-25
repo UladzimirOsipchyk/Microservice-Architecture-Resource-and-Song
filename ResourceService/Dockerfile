@@ -25,6 +25,7 @@ WORKDIR /app
 
 COPY --from=build /app/target/*.jar app.jar
 
-EXPOSE 8082
+EXPOSE 8081
 
-CMD ["java", "-jar", "app.jar"]
+#CMD ["java", "-jar", "app.jar"]
+CMD ["java", "-Dmanagement.metrics.enable.process=false", "-jar", "app.jar"]

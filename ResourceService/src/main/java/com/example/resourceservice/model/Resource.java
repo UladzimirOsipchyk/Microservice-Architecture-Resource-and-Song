@@ -12,6 +12,7 @@ public class Resource {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
   private String fileName;
+  private String storageType;
 
   @Lob
   @Column(columnDefinition = "TEXT")

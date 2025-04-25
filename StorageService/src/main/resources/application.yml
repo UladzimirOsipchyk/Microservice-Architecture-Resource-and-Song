@@ -1,0 +1,27 @@
+server:
+  port: ${SERVER_PORT_STORAGE:8085}
+
+spring:
+  application:
+    name: StorageService
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL_STORAGE:jdbc:postgresql://localhost:5432/storage_db}
+    driverClassName: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME_STORAGE:org.postgresql.Driver}
+
+  jpa:
+    database-platform: ${SPRING_DATASOURCE_STORAGE_DIALECT:org.hibernate.dialect.PostgreSQLDialect}
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO_STORAGE:update}
+    show-sql: ${SPRING_JPA_SHOW_SQL_STORAGE:true}
+
+  jackson:
+    default-property-inclusion: ${SPRING_DEFAULT_JACKSON_PROPERTY_INCLUSION_STORAGE:non_null}
+
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${SERVICE_URL_DEFAULT_ZONE_DISCOVERY:http://localhost:8761/eureka/}
+  instance:
+    instance-id: ${SERVER_INSTANCE_ID_STORAGE:storage-svc-instance}-${random.uuid}

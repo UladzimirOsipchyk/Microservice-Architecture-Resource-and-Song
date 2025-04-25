@@ -1,11 +1,9 @@
-package com.example.resourceservice.service;
+package com.example.resourceprocessor.service.massaging;
 
 import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
 
 @Service
 public class RabbitMQProducer {

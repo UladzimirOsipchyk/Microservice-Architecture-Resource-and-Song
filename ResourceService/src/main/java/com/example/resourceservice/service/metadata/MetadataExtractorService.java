@@ -1,4 +1,4 @@
-package com.example.resourceservice.service;
+package com.example.resourceservice.service.metadata;
 
 import org.apache.tika.parser.mp3.Mp3Parser;
 import org.springframework.stereotype.Service;

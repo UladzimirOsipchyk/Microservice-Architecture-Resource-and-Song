@@ -50,7 +50,6 @@ services:
     image: postgres:alpine
     container_name: resource-svc-db
     volumes:
-#      - была проблема с подключением к базе при старте контейнера, типа такой базы нету...при нулевом страте - все работало
       - resource-db-data:/var/lib/postgresql/data
       - ./init-scripts/resource-db/init.sql:/docker-entrypoint-initdb.d/init.sql
     env_file:
@@ -97,6 +96,7 @@ services:
       - RABBITMQ_HOST=${RABBITMQ_HOST}
       - MINIO_SERVER_HOST=${MINIO_SERVER_HOST}
       - MINIO_SERVER_BUCKET_NAME=${MINIO_SERVER_BUCKET_NAME}
+      - JAVA_TOOL_OPTIONS=-XX:+IgnoreUnrecognizedVMOptions -XX:-UseContainerSupport
     ports:
       - ${SERVER_PORT_RESOURCE}:${SERVER_PORT_RESOURCE}
 
@@ -171,6 +171,50 @@ services:
       - default
 
 
+  storage-db:
+    image: postgres:alpine
+    container_name: storage-svc-db
+    volumes:
+      - storage-db-data:/var/lib/postgresql/data
+      - ./init-scripts/storage-db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=${SPRING_DATASOURCE_STORAGE_DATABASE_NAME}
+      - POSTGRES_USER=${SPRING_DATASOURCE_USERNAME_STORAGE}
+      - POSTGRES_HOST_AUTH_METHOD=${POSTGRES_HOST_AUTH_METHOD}
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "root" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  storage-svc:
+    build:
+      context: ./StorageService
+      dockerfile: Dockerfile
+
+    depends_on:
+      discovery-svc:
+        condition: service_healthy
+      storage-db:
+        condition: service_healthy
+
+    environment:
+      - SERVER_PORT=${SERVER_PORT_STORAGE}
+      - SPRING_DATASOURCE_URL_STORAGE=${SPRING_DATASOURCE_URL_STORAGE}
+      - SPRING_DATASOURCE_USERNAME_STORAGE=${SPRING_DATASOURCE_USERNAME_STORAGE}
+      - SPRING_DATASOURCE_PASSWORD_STORAGE=${SPRING_DATASOURCE_PASSWORD_STORAGE}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME_STORAGE=${SPRING_DATASOURCE_DRIVER_CLASS_NAME_STORAGE}
+      - SPRING_DATASOURCE_STORAGE_DIALECT=${SPRING_DATASOURCE_STORAGE_DIALECT}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO_STORAGE=${SPRING_JPA_HIBERNATE_DDL_AUTO_STORAGE}
+      - SPRING_JPA_SHOW_SQL_STORAGE=${SPRING_JPA_SHOW_SQL_STORAGE}
+      - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
+    ports:
+      - ${SERVER_PORT_STORAGE}:${SERVER_PORT_STORAGE}
+
+    networks:
+      - default
 
   minio-storage:
     image: minio/minio
@@ -208,6 +252,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
     networks:
       - default
 
@@ -215,6 +260,7 @@ services:
 volumes:
   resource-db-data:
   song-db-data:
+  storage-db-data:
   minio_data:
 
 networks:
