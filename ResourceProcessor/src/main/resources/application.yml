@@ -1,0 +1,40 @@
+server:
+  port: ${SERVER_PORT_RESOURCE_PROCESSOR:8084}
+
+spring:
+  application:
+    name: ResourceProcessorService
+
+  cloud:
+    openfeign:
+      client:
+        config:
+          song-service:
+            url: ${SPRING_CLOUD_OPENFEIGN_CLIENT_CONFIG_SONG_SERVICE_URL:http://song-app:8081/}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    username: ${RABBITMQ_DEFAULT_USER:guest}
+    password: ${RABBITMQ_DEFAULT_PASS:guest}
+
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${SERVICE_URL_DEFAULT_ZONE_DISCOVERY:http://localhost:8761/eureka/}
+  instance:
+    instance-id: ${SERVER_INSTANCE_ID_RESOURCE_PROCESSOR:resource-processor-svc-instance}-${random.uuid}
+
+
+cloud:
+  aws:
+    s3:
+#      bucket-name: ${MINIO_SERVER_BUCKET_NAME:local-songs}
+      endpoint: ${MINIO_SERVER_HOST:http://localhost:9000}
+      access-key: ${MINIO_SERVER_ACCESS_KEY:minioadmin}
+      secret-key: ${MINIO_SERVER_SECRET_KEY:minioadmin}
+
+rabbitmq:
+  resource-queue-name: ${RABBITMQ_RESOURCE_QUEUE_NAME:ResourceQueue}
+  host: ${RABBITMQ_HOST:localhost}
+  username: ${RABBITMQ_DEFAULT_USER:guest}
+  password: ${RABBITMQ_DEFAULT_PASS:guest}

@@ -1,0 +1,46 @@
+server:
+  port: ${SERVER_PORT_GATEWAY:8080}
+
+spring:
+  application:
+    name: GatewayService
+
+  cloud:
+    gateway:
+      httpclient:
+        wiretap: true
+
+      routes:
+        ## Resource Service
+        - id: resource_route
+          uri: lb://RESOURCESERVICE
+          predicates:
+            - Path=/resources/**
+
+        ## Song Service
+        - id: song_route
+          uri: lb://SONGSERVICE
+          predicates:
+            - Path=/songs/**
+
+        ## Storage Service
+        - id: storage_route
+          uri: lb://STORAGESERVICE
+          predicates:
+            - Path=/storages/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${SERVICE_URL_DEFAULT_ZONE_DISCOVERY:http://localhost:8761/eureka/}
+  instance:
+    preferIpAddress: true
+
+
+logging:
+  level:
+    reactor.netty: DEBUG
+    reactor.netty.http.client: DEBUG
+    reactor.netty.http.server: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web.reactive.function.client.ExchangeFunctions: TRACE
