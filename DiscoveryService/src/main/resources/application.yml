@@ -14,14 +14,24 @@ eureka:
       defaultZone: ${SERVICE_URL_DEFAULT_ZONE_DISCOVERY:http://localhost:8761/eureka}
 
 management:
-#  metrics:
-#    enable:
-#      system: false
-
   endpoints:
     web:
       exposure:
-        include: health
+        include:
+          - prometheus
+          - health
+          - info
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
   endpoint:
     health:
       show-details: always
+    metrics:
+      enabled: true
+
+    prometheus:
+      enabled: true
+

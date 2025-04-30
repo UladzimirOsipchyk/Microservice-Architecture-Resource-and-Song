@@ -10,24 +10,6 @@ spring:
       httpclient:
         wiretap: true
 
-      routes:
-        ## Resource Service
-        - id: resource_route
-          uri: lb://RESOURCESERVICE
-          predicates:
-            - Path=/resources/**
-
-        ## Song Service
-        - id: song_route
-          uri: lb://SONGSERVICE
-          predicates:
-            - Path=/songs/**
-
-        ## Storage Service
-        - id: storage_route
-          uri: lb://STORAGESERVICE
-          predicates:
-            - Path=/storages/**
 
 eureka:
   client:
@@ -44,3 +26,23 @@ logging:
     reactor.netty.http.server: DEBUG
     org.springframework.cloud.gateway: DEBUG
     org.springframework.web.reactive.function.client.ExchangeFunctions: TRACE
+
+management:
+  endpoint:
+    metrics:
+      enabled: true
+
+    prometheus:
+      enabled: true
+
+  endpoints:
+    web:
+      exposure:
+        include:
+          - prometheus
+          - health
+          - info
+  prometheus:
+    metrics:
+      export:
+        enabled: true

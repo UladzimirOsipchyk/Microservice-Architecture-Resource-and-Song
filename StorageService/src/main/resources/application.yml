@@ -25,3 +25,24 @@ eureka:
       defaultZone: ${SERVICE_URL_DEFAULT_ZONE_DISCOVERY:http://localhost:8761/eureka/}
   instance:
     instance-id: ${SERVER_INSTANCE_ID_STORAGE:storage-svc-instance}-${random.uuid}
+
+
+management:
+  endpoint:
+    metrics:
+      enabled: true
+
+    prometheus:
+      enabled: true
+
+  endpoints:
+    web:
+      exposure:
+        include:
+          - prometheus
+          - health
+          - info
+  prometheus:
+    metrics:
+      export:
+        enabled: true

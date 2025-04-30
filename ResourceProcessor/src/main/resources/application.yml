@@ -38,3 +38,23 @@ rabbitmq:
   host: ${RABBITMQ_HOST:localhost}
   username: ${RABBITMQ_DEFAULT_USER:guest}
   password: ${RABBITMQ_DEFAULT_PASS:guest}
+
+management:
+  endpoint:
+    metrics:
+      enabled: true
+
+    prometheus:
+      enabled: true
+
+  endpoints:
+    web:
+      exposure:
+        include:
+          - prometheus
+          - health
+          - info
+  prometheus:
+    metrics:
+      export:
+        enabled: true

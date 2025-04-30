@@ -9,6 +9,9 @@ services:
 
     environment:
       - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
+      - JAVA_TOOL_OPTIONS=--add-opens=java.base/jdk.internal.platform=ALL-UNNAMED
+      - JAVA_TOOL_OPTIONS="-XX:-UseContainerSupport"
+      - JAVA_TOOL_OPTIONS=-XX:+IgnoreUnrecognizedVMOptions -XX:-UseContainerSupport
 
     ports:
       - ${SERVER_PORT_GATEWAY}:${SERVER_PORT_GATEWAY}
@@ -137,6 +140,9 @@ services:
       - SPRING_JPA_HIBERNATE_DDL_AUTO_SONG=${SPRING_JPA_HIBERNATE_DDL_AUTO_SONG}
       - SPRING_JPA_SHOW_SQL_SONG=${SPRING_JPA_SHOW_SQL_SONG}
       - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
+      - JAVA_TOOL_OPTIONS=--add-opens=java.base/jdk.internal.platform=ALL-UNNAMED
+      - JAVA_TOOL_OPTIONS="-XX:-UseContainerSupport"
+      - JAVA_TOOL_OPTIONS=-XX:+IgnoreUnrecognizedVMOptions -XX:-UseContainerSupport
     ports:
       - ${SERVER_PORT_SONG_SCALE}:${SERVER_PORT_SONG}
 
@@ -159,11 +165,14 @@ services:
         condition: service_healthy
 
     environment:
-      - SERVER_PORT=8181
+      - SERVER_PORT=${SERVER_PORT_RESOURCE_PROCESSOR}
       - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
       - RABBITMQ_HOST=${RABBITMQ_HOST}
       - MINIO_SERVER_HOST=${MINIO_SERVER_HOST}
       - SPRING_PROFILES_ACTIVE=docker
+      - JAVA_TOOL_OPTIONS=--add-opens=java.base/jdk.internal.platform=ALL-UNNAMED
+      - JAVA_TOOL_OPTIONS="-XX:-UseContainerSupport"
+      - JAVA_TOOL_OPTIONS=-XX:+IgnoreUnrecognizedVMOptions -XX:-UseContainerSupport
     ports:
       - ${SERVER_PORT_RESOURCE_PROCESSOR}:${SERVER_PORT_RESOURCE_PROCESSOR}
 
@@ -210,6 +219,9 @@ services:
       - SPRING_JPA_HIBERNATE_DDL_AUTO_STORAGE=${SPRING_JPA_HIBERNATE_DDL_AUTO_STORAGE}
       - SPRING_JPA_SHOW_SQL_STORAGE=${SPRING_JPA_SHOW_SQL_STORAGE}
       - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
+      - JAVA_TOOL_OPTIONS=--add-opens=java.base/jdk.internal.platform=ALL-UNNAMED
+      - JAVA_TOOL_OPTIONS="-XX:-UseContainerSupport"
+      - JAVA_TOOL_OPTIONS=-XX:+IgnoreUnrecognizedVMOptions -XX:-UseContainerSupport
     ports:
       - ${SERVER_PORT_STORAGE}:${SERVER_PORT_STORAGE}
 
@@ -256,12 +268,81 @@ services:
     networks:
       - default
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.2
+    container_name: elasticsearch
+    environment:
+      - discovery.type=${DISCOVERY_TYPE}
+      - bootstrap.memory_lock=${BOOTSTRAP_MEMORY_LOCK}
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+
+
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - ${ELASTIC_SEARCH_PORT}:${ELASTIC_SEARCH_PORT}
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - default
+
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.13.4
+    container_name: filebeat
+    user: root
+    volumes:
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - elasticsearch
+    networks:
+      - default
+
+  prometheus:
+    image: prom/prometheus
+    platform: linux/amd64
+    volumes:
+      - "./prometheus.yml:/etc/prometheus/prometheus.yml"
+    ports:
+      - ${PROMETHEUS_SERVICE_PORT}:${PROMETHEUS_SERVICE_PORT}
+    networks:
+      - default
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    platform: linux/amd64
+    ports:
+      - ${GRAFANA_SERVICE_PORT}:${GRAFANA_SERVICE_PORT}
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_SECURITY_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_SECURITY_ADMIN_PASSWORD}
+    volumes:
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - default
+    depends_on:
+      - prometheus
+
+
 
 volumes:
   resource-db-data:
   song-db-data:
   storage-db-data:
   minio_data:
+  elasticsearch-data:
+  grafana-storage:
+
 
 networks:
   default:
