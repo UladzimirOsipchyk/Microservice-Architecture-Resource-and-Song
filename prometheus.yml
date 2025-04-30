@@ -1,0 +1,33 @@
+global:
+  scrape_interval: 3s
+
+scrape_configs:
+  - job_name: 'gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['gateway-svc:8080']
+#        - targets: ['host.docker.internal:8080']
+
+  - job_name: 'resource'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['resource-svc:8081']
+#      - targets: ['host.docker.internal:8081']
+
+  - job_name: 'song'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['song-svc:8082']
+#      - targets: ['host.docker.internal:8082']
+
+  - job_name: 'resource-processor'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: [ 'resource-processor-svc:8084' ]
+#      - targets: ['host.docker.internal:8084']
+
+  - job_name: 'storage'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: [ 'storage-svc:8085' ]
+#      - targets: ['host.docker.internal:8085']

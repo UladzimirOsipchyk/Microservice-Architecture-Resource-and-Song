@@ -1,0 +1,48 @@
+server:
+  port: ${SERVER_PORT_GATEWAY:8080}
+
+spring:
+  application:
+    name: GatewayService
+
+  cloud:
+    gateway:
+      httpclient:
+        wiretap: true
+
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${SERVICE_URL_DEFAULT_ZONE_DISCOVERY:http://localhost:8761/eureka/}
+  instance:
+    preferIpAddress: true
+
+
+logging:
+  level:
+    reactor.netty: DEBUG
+    reactor.netty.http.client: DEBUG
+    reactor.netty.http.server: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web.reactive.function.client.ExchangeFunctions: TRACE
+
+management:
+  endpoint:
+    metrics:
+      enabled: true
+
+    prometheus:
+      enabled: true
+
+  endpoints:
+    web:
+      exposure:
+        include:
+          - prometheus
+          - health
+          - info
+  prometheus:
+    metrics:
+      export:
+        enabled: true

@@ -1,5 +1,25 @@
 version: "3.8"
 services:
+  gateway-svc:
+    build:
+      context: ./GatewayService
+      dockerfile: Dockerfile
+
+    container_name: gateway-svc
+
+    environment:
+      - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
+      - JAVA_TOOL_OPTIONS=--add-opens=java.base/jdk.internal.platform=ALL-UNNAMED
+      - JAVA_TOOL_OPTIONS="-XX:-UseContainerSupport"
+      - JAVA_TOOL_OPTIONS=-XX:+IgnoreUnrecognizedVMOptions -XX:-UseContainerSupport
+
+    ports:
+      - ${SERVER_PORT_GATEWAY}:${SERVER_PORT_GATEWAY}
+
+    networks:
+      - default
+
+
   discovery-svc:
     build:
       context: ./DiscoveryService
@@ -12,17 +32,28 @@ services:
       - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
       - REGISTER_WITH_EUREKA_DISCOVERY=${REGISTER_WITH_EUREKA_DISCOVERY}
       - FETCH_REGISTRY_DISCOVERY=${FETCH_REGISTRY_DISCOVERY}
+      - JAVA_TOOL_OPTIONS=--add-opens=java.base/jdk.internal.platform=ALL-UNNAMED
+      - JAVA_TOOL_OPTIONS="-XX:-UseContainerSupport"
 
     ports:
       - ${SERVER_PORT_DISCOVERY}:${SERVER_PORT_DISCOVERY}
+
+
+    healthcheck:
+      test: "curl --fail --silent ${SERVICE_DISCOVERY_HEALTH_CHECK} | grep UP || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - default
 
 
   resource-db:
     image: postgres:alpine
     container_name: resource-svc-db
     volumes:
-#      - была проблема с подключением к базе при старте контейнера, типа такой базы нету...при нулевом страте - все работало
-#      - resource-db-data:/var/lib/postgresql/data
+      - resource-db-data:/var/lib/postgresql/data
       - ./init-scripts/resource-db/init.sql:/docker-entrypoint-initdb.d/init.sql
     env_file:
       - .env
@@ -30,11 +61,30 @@ services:
       - POSTGRES_DB=${SPRING_DATASOURCE_RESOURCE_DATABASE_NAME}
       - POSTGRES_USER=${SPRING_DATASOURCE_USERNAME_RESOURCE}
       - POSTGRES_HOST_AUTH_METHOD=${POSTGRES_HOST_AUTH_METHOD}
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "user" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   resource-svc:
     build:
       context: ./ResourceService
       dockerfile: Dockerfile
+
+    depends_on:
+      discovery-svc:
+        condition: service_healthy
+      resource-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio-storage:
+        condition: service_healthy
+
+    networks:
+      - default
+
 
     environment:
       - SERVER_PORT=${SERVER_PORT_RESOURCE}
@@ -46,6 +96,10 @@ services:
       - SPRING_JPA_HIBERNATE_DDL_AUTO_RESOURCE=${SPRING_JPA_HIBERNATE_DDL_AUTO_RESOURCE}
       - SPRING_JPA_SHOW_SQL_RESOURCE=${SPRING_JPA_SHOW_SQL_RESOURCE}
       - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - MINIO_SERVER_HOST=${MINIO_SERVER_HOST}
+      - MINIO_SERVER_BUCKET_NAME=${MINIO_SERVER_BUCKET_NAME}
+      - JAVA_TOOL_OPTIONS=-XX:+IgnoreUnrecognizedVMOptions -XX:-UseContainerSupport
     ports:
       - ${SERVER_PORT_RESOURCE}:${SERVER_PORT_RESOURCE}
 
@@ -59,11 +113,22 @@ services:
       - .env
     environment:
       - POSTGRES_DB=${SPRING_DATASOURCE_SONG_DATABASE_NAME}
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "user" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   song-svc:
     build:
       context: ./SongService
       dockerfile: Dockerfile
+
+    depends_on:
+      discovery-svc:
+        condition: service_healthy
+      song-db:
+        condition: service_healthy
 
     environment:
       - SERVER_PORT=${SERVER_PORT_SONG}
@@ -75,15 +140,211 @@ services:
       - SPRING_JPA_HIBERNATE_DDL_AUTO_SONG=${SPRING_JPA_HIBERNATE_DDL_AUTO_SONG}
       - SPRING_JPA_SHOW_SQL_SONG=${SPRING_JPA_SHOW_SQL_SONG}
       - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
+      - JAVA_TOOL_OPTIONS=--add-opens=java.base/jdk.internal.platform=ALL-UNNAMED
+      - JAVA_TOOL_OPTIONS="-XX:-UseContainerSupport"
+      - JAVA_TOOL_OPTIONS=-XX:+IgnoreUnrecognizedVMOptions -XX:-UseContainerSupport
     ports:
       - ${SERVER_PORT_SONG_SCALE}:${SERVER_PORT_SONG}
 
-    deploy:
-      replicas: 2
+    networks:
+      - default
+
+#    deploy:
+#      replicas: 2
+
+
+  resource-processor-svc:
+    build:
+      context: ./ResourceProcessor
+      dockerfile: Dockerfile
+
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      minio-storage:
+        condition: service_healthy
+
+    environment:
+      - SERVER_PORT=${SERVER_PORT_RESOURCE_PROCESSOR}
+      - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - MINIO_SERVER_HOST=${MINIO_SERVER_HOST}
+      - SPRING_PROFILES_ACTIVE=docker
+      - JAVA_TOOL_OPTIONS=--add-opens=java.base/jdk.internal.platform=ALL-UNNAMED
+      - JAVA_TOOL_OPTIONS="-XX:-UseContainerSupport"
+      - JAVA_TOOL_OPTIONS=-XX:+IgnoreUnrecognizedVMOptions -XX:-UseContainerSupport
+    ports:
+      - ${SERVER_PORT_RESOURCE_PROCESSOR}:${SERVER_PORT_RESOURCE_PROCESSOR}
+
+    networks:
+      - default
+
+
+  storage-db:
+    image: postgres:alpine
+    container_name: storage-svc-db
+    volumes:
+      - storage-db-data:/var/lib/postgresql/data
+      - ./init-scripts/storage-db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=${SPRING_DATASOURCE_STORAGE_DATABASE_NAME}
+      - POSTGRES_USER=${SPRING_DATASOURCE_USERNAME_STORAGE}
+      - POSTGRES_HOST_AUTH_METHOD=${POSTGRES_HOST_AUTH_METHOD}
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "root" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  storage-svc:
+    build:
+      context: ./StorageService
+      dockerfile: Dockerfile
+
+    depends_on:
+      discovery-svc:
+        condition: service_healthy
+      storage-db:
+        condition: service_healthy
+
+    environment:
+      - SERVER_PORT=${SERVER_PORT_STORAGE}
+      - SPRING_DATASOURCE_URL_STORAGE=${SPRING_DATASOURCE_URL_STORAGE}
+      - SPRING_DATASOURCE_USERNAME_STORAGE=${SPRING_DATASOURCE_USERNAME_STORAGE}
+      - SPRING_DATASOURCE_PASSWORD_STORAGE=${SPRING_DATASOURCE_PASSWORD_STORAGE}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME_STORAGE=${SPRING_DATASOURCE_DRIVER_CLASS_NAME_STORAGE}
+      - SPRING_DATASOURCE_STORAGE_DIALECT=${SPRING_DATASOURCE_STORAGE_DIALECT}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO_STORAGE=${SPRING_JPA_HIBERNATE_DDL_AUTO_STORAGE}
+      - SPRING_JPA_SHOW_SQL_STORAGE=${SPRING_JPA_SHOW_SQL_STORAGE}
+      - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
+      - JAVA_TOOL_OPTIONS=--add-opens=java.base/jdk.internal.platform=ALL-UNNAMED
+      - JAVA_TOOL_OPTIONS="-XX:-UseContainerSupport"
+      - JAVA_TOOL_OPTIONS=-XX:+IgnoreUnrecognizedVMOptions -XX:-UseContainerSupport
+    ports:
+      - ${SERVER_PORT_STORAGE}:${SERVER_PORT_STORAGE}
+
+    networks:
+      - default
+
+  minio-storage:
+    image: minio/minio
+    ports:
+      - ${MINIO_SERVER_PORT}:${MINIO_SERVER_PORT}
+
+    environment:
+      MINIO_ROOT_USER: ${MINIO_SERVER_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SERVER_SECRET_KEY}
+      MINIO_HEALTH_CHECK_HOST: ${MINIO_HEALTH_CHECK_HOST}
+    command: server /data --console-address ":9090"
+    volumes:
+      - minio_data:/data
+
+    healthcheck:
+      test: "curl --fail --silent ${MINIO_HEALTH_CHECK_HOST} || exit 1"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - default
+
+
+  rabbitmq:
+    image: rabbitmq:management
+    ports:
+      - ${RABBITMQ_PORT}:${RABBITMQ_PORT}
+      - ${RABBITMQ_PORT_HTTP}:${RABBITMQ_PORT_HTTP}
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - default
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.2
+    container_name: elasticsearch
+    environment:
+      - discovery.type=${DISCOVERY_TYPE}
+      - bootstrap.memory_lock=${BOOTSTRAP_MEMORY_LOCK}
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+
+
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - ${ELASTIC_SEARCH_PORT}:${ELASTIC_SEARCH_PORT}
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - default
+
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.13.4
+    container_name: filebeat
+    user: root
+    volumes:
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - elasticsearch
+    networks:
+      - default
+
+  prometheus:
+    image: prom/prometheus
+    platform: linux/amd64
+    volumes:
+      - "./prometheus.yml:/etc/prometheus/prometheus.yml"
+    ports:
+      - ${PROMETHEUS_SERVICE_PORT}:${PROMETHEUS_SERVICE_PORT}
+    networks:
+      - default
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    platform: linux/amd64
+    ports:
+      - ${GRAFANA_SERVICE_PORT}:${GRAFANA_SERVICE_PORT}
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_SECURITY_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_SECURITY_ADMIN_PASSWORD}
+    volumes:
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - default
+    depends_on:
+      - prometheus
 
 
 
 volumes:
   resource-db-data:
   song-db-data:
+  storage-db-data:
+  minio_data:
+  elasticsearch-data:
+  grafana-storage:
+
+
+networks:
+  default:
+    driver: bridge
 

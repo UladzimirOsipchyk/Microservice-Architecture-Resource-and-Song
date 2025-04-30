@@ -1,5 +1,5 @@
 server:
-  port: ${SERVER_PORT_RESOURCE:8080}
+  port: ${SERVER_PORT_RESOURCE:8081}
 
 spring:
   application:
@@ -12,7 +12,7 @@ spring:
   jpa:
     database-platform: ${SPRING_DATASOURCE_RESOURCE_DIALECT:org.hibernate.dialect.PostgreSQLDialect}
     hibernate:
-      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO_RESOURCE:none}
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO_RESOURCE:update}
     show-sql: ${SPRING_JPA_SHOW_SQL_RESOURCE:true}
 
   cloud:
@@ -20,9 +20,16 @@ spring:
       client:
         config:
           song-service:
-            url: ${SPRING_CLOUD_OPENFEIGN_CLIENT_CONFIG_SONG_SERVICE_URL:http://song-app:8081/}
+            url: ${SPRING_CLOUD_OPENFEIGN_CLIENT_CONFIG_SONG_SERVICE_URL:http://song-app:8082/}
 
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    username: ${RABBITMQ_DEFAULT_USER:guest}
+    password: ${RABBITMQ_DEFAULT_PASS:guest}
 
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.actuate.autoconfigure.metrics.SystemMetricsAutoConfiguration
 
 eureka:
   client:
@@ -30,3 +37,70 @@ eureka:
       defaultZone: ${SERVICE_URL_DEFAULT_ZONE_DISCOVERY:http://localhost:8761/eureka/}
   instance:
     instance-id: ${SERVER_INSTANCE_ID_RESOURCE:resource-svc-instance}-${random.uuid}
+
+
+cloud:
+  aws:
+    s3:
+      endpoint: ${MINIO_SERVER_HOST:http://localhost:9000}
+      access-key: ${MINIO_SERVER_ACCESS_KEY:minioadmin}
+      secret-key: ${MINIO_SERVER_SECRET_KEY:minioadmin}
+
+
+logging:
+  level:
+    reactor.netty: DEBUG
+    reactor.netty.http.client: DEBUG
+    reactor.netty.http.server: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web.reactive.function.client.ExchangeFunctions: TRACE
+
+rabbitmq:
+  resource-queue-name: ${RABBITMQ_RESOURCE_QUEUE_NAME:ResourceQueue}
+  host: ${RABBITMQ_HOST:localhost}
+  username: ${RABBITMQ_DEFAULT_USER:guest}
+  password: ${RABBITMQ_DEFAULT_PASS:guest}
+
+management:
+  health:
+    circuitbreakers:
+      enabled: true
+
+  endpoint:
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+
+    health:
+      show-details: always
+
+  endpoints:
+    web:
+      exposure:
+        include:
+          - prometheus
+          - health
+          - info
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 5
+        minimumNumberOfCalls: 3
+        failureRateThreshold: 50
+        waitDurationInOpenState: 5s
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        permittedNumberOfCallsInHalfOpenState: 2
+    instances:
+      storageServiceCircuitBreaker:
+        baseConfig: default
+
