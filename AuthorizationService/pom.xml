@@ -6,14 +6,14 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.4.4</version>
+    <version>3.4.5</version>
     <relativePath/> <!-- lookup parent from repository -->
   </parent>
   <groupId>com.example</groupId>
-  <artifactId>StorageService</artifactId>
+  <artifactId>AuthorizationService</artifactId>
   <version>0.0.1-SNAPSHOT</version>
-  <name>StorageService</name>
-  <description>StorageService</description>
+  <name>AuthorizationService</name>
+  <description>AuthorizationService</description>
   <url/>
   <licenses>
     <license/>
@@ -29,28 +29,22 @@
   </scm>
   <properties>
     <java.version>17</java.version>
-    <spring-cloud.version>2024.0.1</spring-cloud.version>
   </properties>
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-data-jpa</artifactId>
+      <artifactId>spring-boot-starter</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-oauth2-authorization-server</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.springframework.cloud</groupId>
-      <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
-      <version>4.1.3</version>
-    </dependency>
 
-    <dependency>
-      <groupId>org.postgresql</groupId>
-      <artifactId>postgresql</artifactId>
-      <version>42.7.4</version>
-    </dependency>
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
@@ -59,42 +53,36 @@
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-actuator</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-registry-prometheus</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-security</artifactId>
     </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
     </dependency>
-
+    <dependency>
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-jackson</artifactId>
+      <version>0.11.5</version>
+      <scope>runtime</scope>
+    </dependency>
   </dependencies>
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>org.springframework.cloud</groupId>
-        <artifactId>spring-cloud-dependencies</artifactId>
-        <version>${spring-cloud.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+            </path>
+          </annotationProcessorPaths>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>

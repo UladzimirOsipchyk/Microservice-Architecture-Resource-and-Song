@@ -1,7 +1,6 @@
 # Stage 1: Build Stage
 FROM maven:3.8.5-openjdk-17-slim as build
 
-
 WORKDIR /app
 
 COPY pom.xml .

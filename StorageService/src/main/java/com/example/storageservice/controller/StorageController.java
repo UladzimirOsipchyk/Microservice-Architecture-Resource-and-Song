@@ -6,6 +6,7 @@ import com.example.storageservice.service.StorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -41,12 +42,14 @@ public class StorageController {
   }
 
   @PostMapping
+  @PreAuthorize("hasAuthority('SCOPE_write')")
   public ResponseEntity<CreatedStorageDto> createSTorage(@RequestBody StorageRequestDto storageRequestDTO) throws Exception {
     Storage storage = storageService.createStorage(storageRequestDTO);
     return new ResponseEntity<>(new CreatedStorageDto(storage.getId()), HttpStatus.OK);
   }
 
   @DeleteMapping()
+  @PreAuthorize("hasAuthority('SCOPE_write')")
   public ResponseEntity<DeletedStorageDto> deleteResource(@RequestParam String ids) throws Exception{
     List<Long> deletedIds = storageService.deleteStorages(ids);
     return new ResponseEntity<>(new DeletedStorageDto(deletedIds), HttpStatus.OK);

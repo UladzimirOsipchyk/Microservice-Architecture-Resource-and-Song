@@ -5,6 +5,7 @@ import com.example.storageservice.exception.exceptions.InvalidCsvLengthException
 import com.example.storageservice.exception.exceptions.StorageNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -56,7 +57,13 @@ public class GlobalExceptionHandler {
           new ErrorResponse(message, null, HttpStatus.BAD_REQUEST.value()),
           HttpStatus.BAD_REQUEST
       );
+    } else if(ex instanceof AuthorizationDeniedException) {
+      return new ResponseEntity<>(
+          new ErrorResponse(ex.getMessage(), null, HttpStatus.UNAUTHORIZED.value()),
+          HttpStatus.UNAUTHORIZED
+      );
     }
+    ex.printStackTrace();
     return new ResponseEntity<>(
         new ErrorResponse(
             "An internal server error has occurred.",

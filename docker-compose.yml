@@ -1,5 +1,25 @@
 version: "3.8"
 services:
+  authorization-svc:
+    build:
+      context: ./AuthorizationService
+      dockerfile: Dockerfile
+
+    container_name: authorization-svc
+
+    environment:
+      - SERVER_INSTANCE_AUTHENTICATION:${SERVER_INSTANCE_AUTHENTICATION}
+      - JAVA_TOOL_OPTIONS=--add-opens=java.base/jdk.internal.platform=ALL-UNNAMED
+      - JAVA_TOOL_OPTIONS="-XX:-UseContainerSupport"
+      - JAVA_TOOL_OPTIONS=-XX:+IgnoreUnrecognizedVMOptions -XX:-UseContainerSupport
+
+    ports:
+      - ${SERVER_PORT_AUTHENTICATION}:${SERVER_PORT_AUTHENTICATION}
+
+    networks:
+      - default
+
+
   gateway-svc:
     build:
       context: ./GatewayService
@@ -8,6 +28,7 @@ services:
     container_name: gateway-svc
 
     environment:
+      - SERVER_INSTANCE_AUTHENTICATION:${SERVER_INSTANCE_AUTHENTICATION}
       - SERVICE_URL_DEFAULT_ZONE_DISCOVERY=${SERVICE_URL_DEFAULT_ZONE_DISCOVERY}
       - JAVA_TOOL_OPTIONS=--add-opens=java.base/jdk.internal.platform=ALL-UNNAMED
       - JAVA_TOOL_OPTIONS="-XX:-UseContainerSupport"
@@ -211,6 +232,7 @@ services:
 
     environment:
       - SERVER_PORT=${SERVER_PORT_STORAGE}
+      - SERVER_INSTANCE_AUTHENTICATION:${SERVER_INSTANCE_AUTHENTICATION}
       - SPRING_DATASOURCE_URL_STORAGE=${SPRING_DATASOURCE_URL_STORAGE}
       - SPRING_DATASOURCE_USERNAME_STORAGE=${SPRING_DATASOURCE_USERNAME_STORAGE}
       - SPRING_DATASOURCE_PASSWORD_STORAGE=${SPRING_DATASOURCE_PASSWORD_STORAGE}

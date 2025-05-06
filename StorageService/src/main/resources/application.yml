@@ -18,6 +18,12 @@ spring:
   jackson:
     default-property-inclusion: ${SPRING_DEFAULT_JACKSON_PROPERTY_INCLUSION_STORAGE:non_null}
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+#          issuer-uri: ${SERVER_INSTANCE_AUTHENTICATION:http://localhost:9011}
+          issuer-uri: ${SERVER_INSTANCE_AUTHENTICATION:http://authorization-svc:9011}
 
 eureka:
   client:

@@ -37,7 +37,7 @@ public class StorageService {
     Storage storage = new Storage();
     storage.setStorageType(storageRequestDto.getStorageType());
     storage.setBucketName(storageRequestDto.getBucketName());
-    storage.setPath(storage.getPath());
+    storage.setPath(storageRequestDto.getPath());
     return storageRepository.save(storage);
   }
 
@@ -62,8 +62,9 @@ public class StorageService {
   private void validateStorage(StorageRequestDto storageRequestDto) {
     Map<String, String> validationErrors = new HashMap<>();
     String storageType = storageRequestDto.getStorageType();
+
     if (storageType != null) {
-      if(!storageType.equals(StorageType.STAGING.getType()) || !storageType.equals(StorageType.PERMANENT.getType())) {
+      if(!storageType.equals(StorageType.STAGING.getType()) && !storageType.equals(StorageType.PERMANENT.getType())) {
         validationErrors.put(storageRequestDto.getStorageType(), "invalid storage type");
       }
     } else {

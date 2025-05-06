@@ -10,6 +10,14 @@ spring:
       httpclient:
         wiretap: true
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+#          issuer-uri: ${SERVER_INSTANCE_AUTHENTICATION:http://localhost:9011}
+          issuer-uri: ${SERVER_INSTANCE_AUTHENTICATION:http://authorization-svc:9011}
+
+
 
 eureka:
   client:
