@@ -13,6 +13,7 @@ spring:
             url: ${SPRING_CLOUD_OPENFEIGN_CLIENT_CONFIG_SONG_SERVICE_URL:http://song-app:8081/}
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_DEFAULT_USER:guest}
     password: ${RABBITMQ_DEFAULT_PASS:guest}
 

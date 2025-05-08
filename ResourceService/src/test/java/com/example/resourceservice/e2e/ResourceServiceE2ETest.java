@@ -1,6 +1,10 @@
 package com.example.resourceservice.e2e;
 
 import com.jayway.jsonpath.JsonPath;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+import io.minio.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +14,8 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -21,6 +27,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -30,11 +37,16 @@ import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 
 @Testcontainers
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    properties = "spring.profiles.active=test"
+)
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+
 public class ResourceServiceE2ETest {
   @Container
   @ServiceConnection
@@ -53,33 +65,62 @@ public class ResourceServiceE2ETest {
 
 
   @Container
-  @ServiceConnection
   static RabbitMQContainer rabbitMQ = new RabbitMQContainer("rabbitmq:3.13.1")
       .withExposedPorts(5672, 15672);
+  
+  @DynamicPropertySource
+  static void overrideRabbitProperties(DynamicPropertyRegistry registry) {
+    registry.add("spring.cloud.discovery.enabled", () -> "false");
+    registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
 
-  @BeforeAll
-  static void initContainers() {
-    System.setProperty("spring.jpa.hibernate.ddl-auto", "update");
-    System.setProperty("cloud.aws.s3.endpoint", "http://localhost:" + minio.getMappedPort(9000));
-    System.setProperty("rabbitmq.host", "localhost");
-    System.setProperty("rabbitmq.port", String.valueOf(rabbitMQ.getHttpPort()));
+    registry.add("rabbitmq.host", rabbitMQ::getHost);
+    registry.add("rabbitmq.port", () -> rabbitMQ.getAmqpPort());
+    registry.add("rabbitmq.username", rabbitMQ::getAdminUsername);
+    registry.add("rabbitmq.password", rabbitMQ::getAdminPassword);
+
+    registry.add("cloud.aws.s3.endpoint", () -> "http://localhost:" + minio.getMappedPort(9000));
   }
 
   @Autowired
   private MockMvc mockMvc;
 
-//  @Test
-//  void checkSuccessContainersRunning() {
-//    assertThat(postgres.isCreated()).isTrue();
-//    assertThat(postgres.isRunning()).isTrue();
-//    assertThat(minio.isRunning()).isTrue();
-//    assertThat(minio.isRunning()).isTrue();
-//    assertThat(rabbitMQ.isCreated()).isTrue();
-//    assertThat(rabbitMQ.isRunning()).isTrue();
-//  }
+  private static MinioClient minioClient;
+  @BeforeAll
+  static void initContainers() throws Exception {
+    ConnectionFactory factory = new ConnectionFactory();
+    factory.setHost(rabbitMQ.getHost());
+    factory.setPort(rabbitMQ.getMappedPort(5672));
+    factory.setUsername("guest");
+    factory.setPassword("guest");
+
+    try (Connection connection = factory.newConnection();
+         Channel channel = connection.createChannel()) {
+      channel.queueDeclare("ResourceQueue", true, false, false, null);
+    }
+
+    minioClient = MinioClient.builder()
+        .endpoint("http://" + minio.getHost() + ":" + minio.getMappedPort(9000))
+        .credentials("minioadmin", "minioadmin")
+        .build();
+
+    createBucketIfNotExists(minioClient, "staging-song");
+    createBucketIfNotExists(minioClient, "permanent-song");
+  }
+
+  @Test
+  void checkSuccessContainersRunning() {
+    assertThat(postgres.isCreated()).isTrue();
+    assertThat(postgres.isRunning()).isTrue();
+    assertThat(minio.isRunning()).isTrue();
+    assertThat(minio.isRunning()).isTrue();
+    assertThat(rabbitMQ.isCreated()).isTrue();
+    assertThat(rabbitMQ.isRunning()).isTrue();
+
+  }
 
   @Test
   void testUploadAndSaveFileLocation() throws Exception {
+
     byte[] fileContent = getTestMp3Bytes();
 
     final Integer[] id = new Integer[1];
@@ -95,7 +136,7 @@ public class ResourceServiceE2ETest {
 
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id").value(id[0]))
-        .andExpect(jsonPath("$.fileUrl").value(containsString("/local-songs/Some%20Interesting%20song")));
+        .andExpect(jsonPath("$.fileUrl").value(containsString("/staging-song/Some%20Interesting%20song")));
   }
 
   @Test
@@ -108,6 +149,29 @@ public class ResourceServiceE2ETest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id").exists())
         .andDo(result -> {
+
+          String fileName = "Some Interesting song"; // или получи из id/response
+
+          MinioClient client = MinioClient.builder()
+              .endpoint("http://" + minio.getHost() + ":" + minio.getMappedPort(9000))
+              .credentials("minioadmin", "minioadmin")
+              .build();
+
+          await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> {
+            minioClient.copyObject(
+                CopyObjectArgs.builder()
+                    .bucket("permanent-song")
+                    .object(fileName)
+                    .source(
+                        CopySource.builder()
+                            .bucket("staging-song")
+                            .object(fileName)
+                            .build()
+                    )
+                    .build()
+            );
+          });
+
           String responseBody = result.getResponse().getContentAsString();
           Integer id = JsonPath.read(responseBody, "$.id");
 
@@ -163,5 +227,12 @@ public class ResourceServiceE2ETest {
 
   private byte[] getTestMp3Bytes() throws IOException {
     return new ClassPathResource("sample.mp3").getInputStream().readAllBytes();
+  }
+
+  private static void createBucketIfNotExists(MinioClient client, String bucket) throws Exception {
+    boolean exists = client.bucketExists(BucketExistsArgs.builder().bucket(bucket).build());
+    if (!exists) {
+      client.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
+    }
   }
 }

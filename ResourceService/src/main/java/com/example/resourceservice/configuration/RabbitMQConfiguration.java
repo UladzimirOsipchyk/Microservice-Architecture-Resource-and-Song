@@ -16,6 +16,9 @@ public class RabbitMQConfiguration {
   @Value("${rabbitmq.host}")
   private String host;
 
+  @Value("${rabbitmq.port}")
+  private Integer port;
+
   @Value("${rabbitmq.resource-queue-name}")
   private String queueName;
 
@@ -29,6 +32,7 @@ public class RabbitMQConfiguration {
   @Bean
   public ConnectionFactory connectionFactory() {
     CachingConnectionFactory factory = new CachingConnectionFactory(host);
+    factory.setPort(port);
     factory.setUsername(userName);
     factory.setPassword(password);
     return factory;

@@ -58,6 +58,7 @@ logging:
 rabbitmq:
   resource-queue-name: ${RABBITMQ_RESOURCE_QUEUE_NAME:ResourceQueue}
   host: ${RABBITMQ_HOST:localhost}
+  port: ${RABBITMQ_PORT:5672}
   username: ${RABBITMQ_DEFAULT_USER:guest}
   password: ${RABBITMQ_DEFAULT_PASS:guest}
 
