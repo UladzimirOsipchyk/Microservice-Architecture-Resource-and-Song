@@ -22,6 +22,8 @@ public class SongService {
   public Song getSongById(Long id) {
     Optional<Song> song = songRepository.findById(id);
 
+    System.out.println("SONG inside: " + song);
+
     if (song.isPresent()) {
       return song.get();
     } else {

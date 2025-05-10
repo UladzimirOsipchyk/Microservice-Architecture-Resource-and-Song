@@ -48,7 +48,6 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ErrorResponse> handleInternalServerError(Exception ex) {
-    System.out.println("EXCEPTION: " + ex);
     if (ex instanceof MethodArgumentTypeMismatchException) {
       String message = "Invalid value '" + ((MethodArgumentTypeMismatchException) ex).getValue() + "' for ID. Must be a positive integer.";
       return new ResponseEntity<>(
