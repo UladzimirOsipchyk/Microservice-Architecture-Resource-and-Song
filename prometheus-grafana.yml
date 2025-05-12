@@ -1,0 +1,21 @@
+version: '3'
+services:
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - "./prometheus.yml:/etc/prometheus/prometheus.yml"
+    ports:
+      - ${PROMETHEUS_SERVICE_PORT}:${PROMETHEUS_SERVICE_PORT}
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - ${GRAFANA_SERVICE_PORT}:${GRAFANA_SERVICE_PORT}
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_SECURITY_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_SECURITY_ADMIN_PASSWORD}
+    volumes:
+      - ./grafana:/etc/grafana/provisioning/datasources
