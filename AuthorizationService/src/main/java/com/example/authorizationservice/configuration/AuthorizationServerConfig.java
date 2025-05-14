@@ -81,6 +81,7 @@ public class AuthorizationServerConfig {
 
   @Bean
   public RegisteredClientRepository registeredClientRepository() {
+
     RegisteredClient client = RegisteredClient.withId(UUID.randomUUID().toString())
         .clientId("gateway-client")
         .clientSecret("{noop}secret")
