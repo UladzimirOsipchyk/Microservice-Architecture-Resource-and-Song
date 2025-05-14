@@ -1,6 +1,7 @@
 package com.example.resourceservice.exception;
 
 import com.example.resourceservice.exception.exceptions.*;
+import lombok.extern.java.Log;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -48,7 +49,6 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ErrorResponse> handleInternalServerError(Exception ex) {
-    System.out.println("EXCEPTION: " + ex);
     if (ex instanceof MethodArgumentTypeMismatchException) {
       String message = "Invalid value '" + ((MethodArgumentTypeMismatchException) ex).getValue() + "' for ID. Must be a positive integer.";
       return new ResponseEntity<>(

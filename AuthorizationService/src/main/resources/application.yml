@@ -1,0 +1,12 @@
+server:
+  port: ${SERVER_PORT_AUTHENTICATION:9011}
+
+
+spring:
+  application:
+    name: AuthorizationService
+
+  security:
+    user:
+      name: admin
+      password: password
